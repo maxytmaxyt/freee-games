@@ -1,15 +1,19 @@
 {
   "name": "free-games",
-  "version": "1.1.0",
-  "description": "PC Gratis-Spiele Scanner",
-  "main": "index.js",
+  "version": "1.2.0",
+  "description": "PC Gratis-Spiele Scanner – Web-Server für Pterodactyl",
+  "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js"
+    "start": "node server.js",
+    "scan": "node index.js"
   },
-  "keywords": ["gratis", "games", "free", "epic", "steam", "gog"],
+  "keywords": ["gratis", "games", "free", "epic", "steam", "gog", "pterodactyl"],
   "author": "maxytmaxyt",
   "license": "ISC",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "cheerio": "^1.2.0",
     "open": "^11.0.4"

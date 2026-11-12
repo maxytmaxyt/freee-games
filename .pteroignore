@@ -1,0 +1,4 @@
+node_modules/
+gratis-spiele.html
+*.log
+.DS_Store

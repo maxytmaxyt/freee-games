@@ -1,65 +1,105 @@
 # 🎮 Free Games Scanner
 
-Scannt automatisch **12 Quellen** nach aktuellen Gratis-Spielen und erstellt eine übersichtliche HTML-Seite.
+Scannt automatisch **12 Quellen** nach aktuellen Gratis-Spielen und stellt die Ergebnisse als Webseite bereit.
 
-## Unterstützte Quellen
+---
 
-| Quelle | Typ | API-Key? |
+## 🚀 Pterodactyl-Setup (Node.js Egg)
+
+### 1. Egg einrichten
+
+| Einstellung | Wert |
+|---|---|
+| **Egg** | `Node.js` (beliebige Version ≥ 18) |
+| **Startup-Befehl** | `node server.js` |
+| **Port** | beliebig – Pterodactyl weist automatisch einen zu |
+
+### 2. Umgebungsvariablen (optional)
+
+Im Pterodactyl-Panel unter **„Startup"** → **„Environment Variables"** eintragen:
+
+| Variable | Standard | Beschreibung |
 |---|---|---|
-| **Epic Games Store** | Offizielle Promotions-API | Nein |
-| **Steam** | Specials API (100% Rabatt) | Nein |
-| **GOG** | Catalog API | Nein |
-| **CheapShark** | 35+ Stores (Fanatical, IndieGala, Humble Store, GMG…) | Nein |
-| **FreeStuffBot** | 100%-Rabatte + Free Weekends + DLC-Aktionen | Nein (Public) |
-| **Amazon Prime Gaming** | Monatliche Gratis-Spiele | Nein (via GamerPower) |
-| **Humble Bundle** | Aktuelle Gratis-Angebote | Nein |
-| **GamerPower** | Community-Datenbank (alle Plattformen) | Nein |
-| **Reddit r/FreeGameFindings** | Community-Tracking in Echtzeit | Nein |
-| **Itch.io** | Sale-Feed (Gratis-Indie-Spiele) | Nein |
-| **Rockstar Games** | Direkter Webseiten-Scan | Nein |
-| **Ubisoft Connect** | Direkter Webseiten-Scan | Nein |
+| `PORT` | `3000` | HTTP-Port (Pterodactyl setzt das automatisch) |
+| `SCAN_INTERVAL_HOURS` | `6` | Wie oft (in Stunden) neu gescannt wird |
 
-> Alle genutzten APIs sind kostenlos und erfordern keinen API-Key.
+> **Tipp:** Pterodactyl setzt `PORT` automatisch – du musst nichts ändern.
 
-## Installation
+### 3. Dateien hochladen
 
+Alle Dateien aus diesem Repository in den Server-Ordner hochladen (außer `node_modules/`).
+
+### 4. npm install ausführen
+
+Im Pterodactyl-Terminal:
 ```bash
 npm install
 ```
 
-## Starten
+### 5. Server starten
 
-```bash
-npm start
-```
+Einfach den Server im Panel starten. Beim ersten Start scannt er sofort.
 
-## Dateistruktur
+---
+
+## 🌐 Routen
+
+| Route | Beschreibung |
+|---|---|
+| `/` | HTML-Übersichtsseite mit allen Gratis-Spielen |
+| `/status` | JSON-Status (letzter Scan, nächster Scan) |
+| `/scan` | Manuellen Scan sofort auslösen |
+
+---
+
+## 📦 Quellen (12 gesamt)
+
+| Quelle | Datei | API-Key? |
+|---|---|---|
+| Epic Games Store | `src/epic.js` | Nein |
+| Steam (100% Rabatt) | `src/steam.js` | Nein |
+| GOG | `src/gog.js` | Nein |
+| CheapShark (35+ Stores) | `src/cheapshark.js` | Nein |
+| FreeStuffBot | `src/freestuff.js` | Nein |
+| Amazon Prime Gaming | `src/prime.js` | Nein |
+| Humble Bundle | `src/humble.js` | Nein |
+| Rockstar & Ubisoft | `src/hersteller.js` | Nein |
+| GamerPower | `src/community.js` | Nein |
+| Reddit r/FreeGameFindings | `src/community.js` | Nein |
+| Itch.io | `src/community.js` | Nein |
+| FreeToGame | `src/prime.js` | Nein |
+
+> Alle APIs sind kostenlos und brauchen keinen API-Key.
+
+---
+
+## 📁 Dateistruktur
 
 ```
 freee-games/
-├── index.js          # Einstiegspunkt & Hauptlogik
+├── server.js         ← Pterodactyl-Einstiegspunkt (HTTP-Server + Scheduler)
+├── index.js          ← Lokaler Einmal-Scan (öffnet Browser)
 ├── package.json
 ├── README.md
 └── src/
-    ├── epic.js       # Epic Games Store (Promotions-API)
-    ├── steam.js      # Steam (Specials API)
-    ├── gog.js        # GOG (Catalog API)
-    ├── cheapshark.js # CheapShark – 35+ Stores (Fanatical, IndieGala, Humble…)
-    ├── freestuff.js  # FreeStuffBot API (100%-Rabatte & Free Weekends)
-    ├── prime.js      # Amazon Prime Gaming + FreeToGame
-    ├── humble.js     # Humble Bundle
-    ├── hersteller.js # Rockstar Games & Ubisoft (Direkt-Scan)
-    ├── community.js  # GamerPower + Reddit r/FreeGameFindings + Itch.io
-    └── html.js       # HTML-Generator
+    ├── epic.js
+    ├── steam.js
+    ├── gog.js
+    ├── cheapshark.js
+    ├── freestuff.js
+    ├── prime.js
+    ├── humble.js
+    ├── hersteller.js
+    ├── community.js
+    └── html.js
 ```
 
-## Wie oft ausführen?
+---
 
-| Quelle | Aktualisierungsrhythmus |
-|---|---|
-| Epic Games Store | Jeden Donnerstag 17:00 Uhr |
-| Steam 100%-Aktionen | Jederzeit möglich |
-| Amazon Prime Gaming | Monatlich (1. des Monats) |
-| GOG / GamerPower | Unregelmäßig |
+## 💻 Lokal testen
 
-Empfehlung: **täglich einmal ausführen** (`npm start`).
+```bash
+npm install
+npm run scan    # einmaliger Scan, öffnet Browser
+npm start       # startet den Web-Server lokal auf Port 3000
+```
