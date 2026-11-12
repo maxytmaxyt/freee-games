@@ -1,13 +1,14 @@
 {
   "name": "free-games",
-  "version": "1.0.0",
-  "description": "",
+  "version": "1.1.0",
+  "description": "PC Gratis-Spiele Scanner",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["gratis", "games", "free", "epic", "steam", "gog"],
+  "author": "maxytmaxyt",
   "license": "ISC",
   "dependencies": {
     "cheerio": "^1.2.0",
