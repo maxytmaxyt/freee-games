@@ -4,6 +4,9 @@
 export function baueHtml(liste) {
   const zeitstempel = new Date().toLocaleString('de-DE');
 
+  const quellenSet = [...new Set(liste.map((s) => s.plattform))];
+  const quellenBadges = quellenSet.map((p) => `<span class="plattform-badge">${p}</span>`).join('');
+
   const karten = liste
     .map(
       (s) => `
@@ -43,14 +46,23 @@ export function baueHtml(liste) {
       margin: 0;
       padding: 2rem 1rem;
     }
-    header { text-align: center; margin-bottom: 2.5rem; }
-    h1 { margin: 0; font-size: 2rem; color: #ffffff; }
-    .meta { color: #8b949e; margin-top: 0.5rem; font-size: 0.9rem; }
+    header { text-align: center; margin-bottom: 2rem; }
+    h1 { margin: 0 0 0.5rem; font-size: 2rem; color: #ffffff; }
+    .meta { color: #8b949e; font-size: 0.88rem; margin-bottom: 1rem; }
+    .plattformen { display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center; margin-bottom: 1.5rem; }
+    .plattform-badge {
+      font-size: 0.72rem;
+      padding: 0.2rem 0.65rem;
+      border-radius: 999px;
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #c9d1d9;
+    }
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
       gap: 1.5rem;
-      max-width: 1300px;
+      max-width: 1400px;
       margin: 0 auto;
     }
     .card {
@@ -108,7 +120,6 @@ export function baueHtml(liste) {
       border-radius: 8px;
       font-weight: 600;
       margin-top: auto;
-      padding-top: 0.75rem;
       transition: background 0.15s;
     }
     .btn:hover { background: #388bfd; }
@@ -124,14 +135,15 @@ export function baueHtml(liste) {
   <header>
     <h1>🎮 Aktuelle Gratis-Spiele</h1>
     <div class="meta">
-      Letzter Scan: ${zeitstempel} &nbsp;•&nbsp; Gefundene Aktionen: <strong>${liste.length}</strong>
-      &nbsp;•&nbsp; Quellen: Epic, Steam, GOG, Itch.io, GamerPower, Reddit
+      Letzter Scan: ${zeitstempel}
+      &nbsp;•&nbsp; <strong>${liste.length}</strong> Angebote gefunden
     </div>
+    <div class="plattformen">${quellenBadges}</div>
   </header>
   <div class="grid">
     ${
       karten ||
-      '<p class="empty">Aktuell wurden keine neuen Gratis-Aktionen gefunden. Versuche es später erneut.</p>'
+      '<p class="empty">Aktuell wurden keine Gratis-Aktionen gefunden. Versuche es später erneut.</p>'
     }
   </div>
 </body>
