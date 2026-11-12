@@ -1,6 +1,6 @@
 // ============================================================
 // all.js – automatisch gebündelt aus allen Quelldateien
-// Generiert: 12.11.2026, 21:46:49
+// Generiert: 12.11.2026, 21:47:09
 // Quelldateien: src/constants.js, src/html.js, src/epic.js, src/steam.js, src/gog.js, src/cheapshark.js, src/freestuff.js, src/prime.js, src/humble.js, src/hersteller.js, src/community.js, server.js
 // ============================================================
 
