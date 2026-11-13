@@ -35,6 +35,7 @@ export async function scanEpicGames() {
           ende,
           link: slug ? `https://store.epicgames.com/de/p/${slug}` : 'https://store.epicgames.com/de/free-games',
           bild,
+          art: /dlc|add-?on/i.test(spiel.title ?? '') ? 'DLC' : 'Spiel',
         });
       }
     }

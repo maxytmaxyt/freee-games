@@ -17,6 +17,7 @@ export async function scanGOG() {
       ende: 'Zeitlich begrenzt',
       link: `https://www.gog.com${p.storeLink ?? '/de/games'}`,
       bild: p.coverHorizontal ?? '',
+      art: /dlc|add-?on|erweiterung/i.test(p.title ?? '') ? 'DLC' : 'Spiel',
     }));
   } catch (e) {
     console.warn('GOG-Scan übersprungen:', e.message);

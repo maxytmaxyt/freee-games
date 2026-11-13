@@ -39,6 +39,7 @@ export async function scanFreeStuff() {
           : 'Zeitlich begrenzt',
         link: spiel.url ?? spiel.store_meta?.storefront_link ?? 'https://freestuffbot.xyz',
         bild: spiel.thumbnail ?? '',
+        art: /dlc|add-?on/i.test(spiel.title ?? '') ? 'DLC' : 'Spiel',
       });
     }
     return treffer;

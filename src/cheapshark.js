@@ -19,6 +19,7 @@ export async function scanCheapShark() {
       ende: 'Zeitlich begrenzt',
       link: `https://www.cheapshark.com/redirect?dealID=${deal.dealID}`,
       bild: deal.thumb || '',
+      art: /dlc/i.test(deal.title ?? '') ? 'DLC' : 'Spiel',
     }));
   } catch (e) {
     console.warn('CheapShark-Scan übersprungen:', e.message);

@@ -24,6 +24,7 @@ export async function scanSteam() {
             ? `https://store.steampowered.com/app/${appId}/`
             : 'https://store.steampowered.com/search/?specials=1&maxprice=free',
           bild: item.large_capsule_image || item.small_capsule_image || '',
+          art: /dlc/i.test(item.name ?? '') ? 'DLC' : 'Spiel',
         };
       });
   } catch (e) {

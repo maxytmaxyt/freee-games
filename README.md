@@ -52,7 +52,7 @@ Einfach den Server im Panel starten. Beim ersten Start scannt er sofort.
 
 ---
 
-## 📦 Quellen (12 gesamt)
+## 📦 Quellen (erweitert)
 
 | Quelle | Datei | API-Key? |
 |---|---|---|
@@ -61,13 +61,18 @@ Einfach den Server im Panel starten. Beim ersten Start scannt er sofort.
 | GOG | `src/gog.js` | Nein |
 | CheapShark (35+ Stores) | `src/cheapshark.js` | Nein |
 | FreeStuffBot | `src/freestuff.js` | Nein |
-| Amazon Prime Gaming | `src/prime.js` | Nein |
+| Amazon Prime Gaming | `src/prime.js` / `src/gamerpower.js` | Nein |
 | Humble Bundle | `src/humble.js` | Nein |
-| Rockstar & Ubisoft | `src/hersteller.js` | Nein |
-| GamerPower | `src/community.js` | Nein |
-| Reddit r/FreeGameFindings | `src/community.js` | Nein |
-| Itch.io | `src/community.js` | Nein |
-| FreeToGame | `src/prime.js` | Nein |
+| Rockstar | `src/rockstar.js` | Nein |
+| Ubisoft | `src/ubisoft.js` | Nein |
+| GamerPower | `src/gamerpower.js` | Nein |
+| IndieGala | `src/indiegala.js` | Nein |
+| Itch.io | `src/itch.js` | Nein |
+| STOVE | `src/stove.js` | Nein |
+| Fanatical | `src/fanatical.js` | Nein |
+| Green Man Gaming | `src/greenmangaming.js` | Nein |
+| Gamesplanet | `src/gamesplanet.js` | Nein |
+| FreeToGame | `src/freetogame.js` | Nein |
 
 > Alle APIs sind kostenlos und brauchen keinen API-Key.
 
@@ -82,6 +87,11 @@ freee-games/
 ├── package.json
 ├── README.md
 └── src/
+    ├── meta.js
+    ├── styles.js
+    ├── client.js
+    ├── html.js
+    ├── constants.js
     ├── epic.js
     ├── steam.js
     ├── gog.js
@@ -91,7 +101,16 @@ freee-games/
     ├── humble.js
     ├── hersteller.js
     ├── community.js
-    └── html.js
+    ├── gamerpower.js
+    ├── indiegala.js
+    ├── itch.js
+    ├── stove.js
+    ├── fanatical.js
+    ├── greenmangaming.js
+    ├── gamesplanet.js
+    ├── rockstar.js
+    ├── ubisoft.js
+    └── freetogame.js
 ```
 
 ---
