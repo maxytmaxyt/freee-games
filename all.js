@@ -1,7 +1,7 @@
 // ============================================================
 // all.js – automatisch gebündelt aus allen Quelldateien
-// Generiert: 13.11.2026, 10:32:38
-// Quelldateien: src/constants.js, src/meta.js, src/styles.js, src/client.js, src/html.js, src/gamerpower.js, src/indiegala.js, src/itch.js, src/stove.js, src/fanatical.js, src/greenmangaming.js, src/gamesplanet.js, src/rockstar.js, src/ubisoft.js, src/freetogame.js, src/epic.js, src/steam.js, src/gog.js, src/cheapshark.js, src/freestuff.js, src/prime.js, src/humble.js, src/hersteller.js, src/community.js, server.js
+// Generiert: 13.11.2026, 10:36:54
+// Quelldateien: src/constants.js, src/meta.js, src/styles.js, src/client.js, src/html.js, src/gamerpower.js, src/cheapshark.js, src/epic.js, src/fanatical.js, src/freetogame.js, src/gamesplanet.js, src/gog.js, src/greenmangaming.js, src/indiegala.js, src/itch.js, src/rockstar.js, src/steam.js, src/stove.js, src/ubisoft.js, src/freestuff.js, server.js
 // ============================================================
 
 import * as cheerio from 'cheerio';
@@ -535,6 +535,303 @@ async function scanGamerPowerHumble() {
 
 
 // ──────────────────────────────────────────────────────────────────────
+// 📄 src/cheapshark.js
+// ──────────────────────────────────────────────────────────────────────
+/**
+ * CheapShark API – trackt 35+ PC-Spielestores und liefert alle aktuellen 100%-Rabatte.
+ * Kein API-Key erforderlich. Preise in USD.
+ * Docs: https://apidocs.cheapshark.com/
+ */
+async function scanCheapShark() {
+  try {
+    // Nur Deals mit 100% Rabatt (upperPrice=0) und mindestens einer Bewertung
+    const url = 'https://www.cheapshark.com/api/1.0/deals?upperPrice=0&pageSize=60&sortBy=Recent';
+    const res = await fetch(url);
+    const data = await res.json();
+    if (!Array.isArray(data)) return [];
+
+    return data.map((deal) => ({
+      titel: deal.title,
+      plattform: storeIdZuName(deal.storeID),
+      quelle: 'CheapShark API (35+ Stores)',
+      preis: `${parseFloat(deal.normalPrice).toFixed(2)} $`,
+      ende: 'Zeitlich begrenzt',
+      link: `https://www.cheapshark.com/redirect?dealID=${deal.dealID}`,
+      bild: deal.thumb || '',
+      art: /dlc/i.test(deal.title ?? '') ? 'DLC' : 'Spiel',
+    }));
+  } catch (e) {
+    console.warn('CheapShark-Scan übersprungen:', e.message);
+    return [];
+  }
+}
+
+/** Bekannte CheapShark Store-IDs → lesbarer Name */
+function storeIdZuName(id) {
+  const stores = {
+    '1':  'Steam',
+    '2':  'GamersGate',
+    '3':  'GreenManGaming',
+    '7':  'GOG',
+    '8':  'Humble Store',
+    '11': 'Fanatical',
+    '13': 'Gamesplanet',
+    '15': 'GameBillet',
+    '21': 'IndieGala',
+    '24': '2Game',
+    '28': 'WinGameStore',
+    '36': 'Epic Games Store',
+  };
+  return stores[String(id)] ?? `Store #${id}`;
+}
+
+
+// ──────────────────────────────────────────────────────────────────────
+// 📄 src/epic.js
+// ──────────────────────────────────────────────────────────────────────
+
+
+/**
+ * Scannt die Epic Games Store API nach aktuellen Gratis-Angeboten.
+ * Nutzt den offiziellen Free Games Promotions-Endpunkt.
+ */
+async function scanEpicGames() {
+  try {
+    const url = 'https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions?locale=de&country=DE&allowCountries=DE';
+    const res = await fetch(url, { headers: { 'User-Agent': USER_AGENT } });
+    const data = await res.json();
+    const spiele = data?.data?.Catalog?.searchStore?.elements || [];
+
+    const treffer = [];
+    for (const spiel of spiele) {
+      const promotionen = spiel.promotions?.promotionalOffers ?? [];
+      const angebote = promotionen.flatMap((p) => p.promotionalOffers ?? []);
+      const istGratis = angebote.some((o) => o.discountSetting?.discountPercentage === 0);
+
+      if (istGratis) {
+        const slug = spiel.catalogNs?.mappings?.[0]?.pageSlug ?? spiel.productSlug ?? '';
+        const endeRaw = angebote[0]?.endDate;
+        const ende = endeRaw ? new Date(endeRaw).toLocaleString('de-DE') : 'Begrenzte Zeit';
+        const bild =
+          spiel.keyImages?.find((i) => i.type === 'OfferImageWide')?.url ??
+          spiel.keyImages?.[0]?.url ??
+          '';
+
+        treffer.push({
+          titel: spiel.title,
+          plattform: 'Epic Games Store',
+          quelle: 'Offizielle API',
+          preis: spiel.price?.totalPrice?.fmtPrice?.originalPrice ?? 'Kostenpflichtig',
+          ende,
+          link: slug ? `https://store.epicgames.com/de/p/${slug}` : 'https://store.epicgames.com/de/free-games',
+          bild,
+          art: /dlc|add-?on/i.test(spiel.title ?? '') ? 'DLC' : 'Spiel',
+        });
+      }
+    }
+    return treffer;
+  } catch (e) {
+    console.warn('Epic-Scan übersprungen:', e.message);
+    return [];
+  }
+}
+
+
+// ──────────────────────────────────────────────────────────────────────
+// 📄 src/fanatical.js
+// ──────────────────────────────────────────────────────────────────────
+
+/**
+ * Fanatical – Gratis-Spiele-Seite.
+ */
+async function scanFanatical() {
+  const treffer = [];
+  try {
+    const res = await fetch('https://www.fanatical.com/de/free-games', {
+      headers: { 'User-Agent': USER_AGENT },
+    });
+    const html = await res.text();
+    const $ = cheerio.load(html);
+
+    $('a[href*="/de/game/"], .product-card, [class*="product"]').each((_, el) => {
+      const titel = $(el).find('h2, h3, .title, [class*="title"]').first().text().trim()
+        || $(el).attr('title') || '';
+      const link = $(el).attr('href') ?? $(el).find('a').first().attr('href') ?? '';
+      const bild = $(el).find('img').first().attr('src') ?? $(el).find('img').first().attr('data-src') ?? '';
+      if (titel && titel.length > 2 && titel.length < 120) {
+        treffer.push({
+          titel,
+          plattform: 'Fanatical',
+          quelle: 'Fanatical Free Games',
+          preis: 'Gratis',
+          ende: 'Zeitlich begrenzt',
+          link: link.startsWith('http') ? link : `https://www.fanatical.com${link}`,
+          bild,
+        });
+      }
+    });
+  } catch (e) {
+    console.warn('Fanatical-Scan übersprungen:', e.message);
+  }
+  // Duplikate innerhalb entfernen
+  const seen = new Set();
+  return treffer.filter((t) => {
+    const k = t.titel.toLowerCase();
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  }).slice(0, 25);
+}
+
+
+// ──────────────────────────────────────────────────────────────────────
+// 📄 src/freetogame.js
+// ──────────────────────────────────────────────────────────────────────
+async function scanFreeToGame() {
+  const treffer = [];
+  try {
+    const res = await fetch('https://www.freetogame.com/api/games?sort-by=release-date');
+    const data = await res.json();
+    if (Array.isArray(data)) {
+      for (const spiel of data.slice(0, 10)) {
+        treffer.push({
+          titel: spiel.title,
+          plattform: spiel.platform ?? 'PC',
+          quelle: 'FreeToGame',
+          preis: 'Free-to-Play',
+          ende: 'Dauerhaft kostenlos',
+          link: spiel.game_url ?? 'https://www.freetogame.com',
+          bild: spiel.thumbnail ?? '',
+          art: 'Free-to-Play',
+        });
+      }
+    }
+  } catch (e) {
+    console.warn('FreeToGame-Scan übersprungen:', e.message);
+  }
+  return treffer;
+}
+
+
+// ──────────────────────────────────────────────────────────────────────
+// 📄 src/gamesplanet.js
+// ──────────────────────────────────────────────────────────────────────
+
+async function scanGamesplanet() {
+  const treffer = [];
+  try {
+    const res = await fetch('https://de.gamesplanet.com/games?price=0', {
+      headers: { 'User-Agent': USER_AGENT },
+    });
+    const html = await res.text();
+    const $ = cheerio.load(html);
+
+    $('a, div, article').each((_, el) => {
+      const titel = $(el).find('h2, h3, .title, [class*="title"], [class*="name"]').first().text().trim();
+      const link = $(el).attr('href') ?? $(el).find('a').first().attr('href') ?? '';
+      const bild = $(el).find('img').first().attr('src') ?? $(el).find('img').first().attr('data-src') ?? '';
+      if (titel && titel.length > 2 && titel.length < 120) {
+        treffer.push({
+          titel,
+          plattform: 'Gamesplanet',
+          quelle: 'Gamesplanet Free Games',
+          preis: 'Gratis',
+          ende: 'Zeitlich begrenzt',
+          link: link.startsWith('http') ? link : `https://de.gamesplanet.com${link}`,
+          bild,
+        });
+      }
+    });
+  } catch (e) {
+    console.warn('Gamesplanet-Scan übersprungen:', e.message);
+  }
+  const seen = new Set();
+  return treffer.filter((t) => {
+    const k = t.titel.toLowerCase();
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  }).slice(0, 25);
+}
+
+
+// ──────────────────────────────────────────────────────────────────────
+// 📄 src/gog.js
+// ──────────────────────────────────────────────────────────────────────
+/**
+ * Scannt die GOG-Datenbank nach aktuellen Gratis-Angeboten.
+ * Nutzt die öffentliche GOG-Catalog-API.
+ */
+async function scanGOG() {
+  try {
+    const url = 'https://catalog.gog.com/v1/catalog?productType=in:game,pack&discounted=eq:true&price=between:0,0&limit=48&locale=de-DE';
+    const res = await fetch(url);
+    const data = await res.json();
+    const produkte = data?.products ?? [];
+
+    return produkte.map((p) => ({
+      titel: p.title,
+      plattform: 'GOG',
+      quelle: 'GOG Catalog API',
+      preis: p.price?.base ?? 'Kostenpflichtig',
+      ende: 'Zeitlich begrenzt',
+      link: `https://www.gog.com${p.storeLink ?? '/de/games'}`,
+      bild: p.coverHorizontal ?? '',
+      art: /dlc|add-?on|erweiterung/i.test(p.title ?? '') ? 'DLC' : 'Spiel',
+    }));
+  } catch (e) {
+    console.warn('GOG-Scan übersprungen:', e.message);
+    return [];
+  }
+}
+
+
+// ──────────────────────────────────────────────────────────────────────
+// 📄 src/greenmangaming.js
+// ──────────────────────────────────────────────────────────────────────
+
+async function scanGreenManGaming() {
+  const treffer = [];
+  try {
+    const res = await fetch('https://www.greenmangaming.com/de/free-games/', {
+      headers: { 'User-Agent': USER_AGENT },
+    });
+    const html = await res.text();
+    const $ = cheerio.load(html);
+
+    $('a, div, article').each((_, el) => {
+      const titel = $(el).find('h2, h3, .title, [class*="title"], [class*="name"]').first().text().trim();
+      const link = $(el).attr('href') ?? $(el).find('a').first().attr('href') ?? '';
+      const bild = $(el).find('img').first().attr('src') ?? $(el).find('img').first().attr('data-src') ?? '';
+      if (
+        titel && titel.length > 2 && titel.length < 120 &&
+        /free|gratis|kostenlos/i.test($(el).text())
+      ) {
+        treffer.push({
+          titel,
+          plattform: 'Green Man Gaming',
+          quelle: 'Green Man Gaming Free Games',
+          preis: 'Gratis',
+          ende: 'Zeitlich begrenzt',
+          link: link.startsWith('http') ? link : `https://www.greenmangaming.com${link}`,
+          bild,
+        });
+      }
+    });
+  } catch (e) {
+    console.warn('GreenManGaming-Scan übersprungen:', e.message);
+  }
+  const seen = new Set();
+  return treffer.filter((t) => {
+    const k = t.titel.toLowerCase();
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  }).slice(0, 25);
+}
+
+
+// ──────────────────────────────────────────────────────────────────────
 // 📄 src/indiegala.js
 // ──────────────────────────────────────────────────────────────────────
 
@@ -598,176 +895,6 @@ async function scanItch() {
 
 
 // ──────────────────────────────────────────────────────────────────────
-// 📄 src/stove.js
-// ──────────────────────────────────────────────────────────────────────
-
-async function scanStove() {
-  const treffer = [];
-  try {
-    const res = await fetch(
-      'https://www.onstove.com/event/list?category=GAME_GIVE_AWAY&page=1&pageSize=10',
-      { headers: { 'User-Agent': USER_AGENT, 'Accept': 'application/json' } }
-    );
-    if (res.ok && res.headers.get('content-type')?.includes('json')) {
-      const data = await res.json();
-      for (const item of (data?.list ?? data?.data ?? []).slice(0, 10)) {
-        const titel = item.title ?? item.eventName ?? item.name;
-        if (!titel) continue;
-        treffer.push({
-          titel,
-          plattform: 'STOVE',
-          quelle: 'STOVE Giveaways',
-          preis: 'Gratis',
-          ende: item.endDate
-            ? new Date(item.endDate).toLocaleString('de-DE')
-            : 'Zeitlich begrenzt',
-          link: item.url ?? 'https://www.onstove.com/event',
-          bild: item.imageUrl ?? item.thumbnail ?? '',
-        });
-      }
-    }
-  } catch (e) {
-    console.warn('STOVE-Scan übersprungen:', e.message);
-  }
-  return treffer;
-}
-
-
-// ──────────────────────────────────────────────────────────────────────
-// 📄 src/fanatical.js
-// ──────────────────────────────────────────────────────────────────────
-
-/**
- * Fanatical – Gratis-Spiele-Seite.
- */
-async function scanFanatical() {
-  const treffer = [];
-  try {
-    const res = await fetch('https://www.fanatical.com/de/free-games', {
-      headers: { 'User-Agent': USER_AGENT },
-    });
-    const html = await res.text();
-    const $ = cheerio.load(html);
-
-    $('a[href*="/de/game/"], .product-card, [class*="product"]').each((_, el) => {
-      const titel = $(el).find('h2, h3, .title, [class*="title"]').first().text().trim()
-        || $(el).attr('title') || '';
-      const link = $(el).attr('href') ?? $(el).find('a').first().attr('href') ?? '';
-      const bild = $(el).find('img').first().attr('src') ?? $(el).find('img').first().attr('data-src') ?? '';
-      if (titel && titel.length > 2 && titel.length < 120) {
-        treffer.push({
-          titel,
-          plattform: 'Fanatical',
-          quelle: 'Fanatical Free Games',
-          preis: 'Gratis',
-          ende: 'Zeitlich begrenzt',
-          link: link.startsWith('http') ? link : `https://www.fanatical.com${link}`,
-          bild,
-        });
-      }
-    });
-  } catch (e) {
-    console.warn('Fanatical-Scan übersprungen:', e.message);
-  }
-  // Duplikate innerhalb entfernen
-  const seen = new Set();
-  return treffer.filter((t) => {
-    const k = t.titel.toLowerCase();
-    if (seen.has(k)) return false;
-    seen.add(k);
-    return true;
-  }).slice(0, 25);
-}
-
-
-// ──────────────────────────────────────────────────────────────────────
-// 📄 src/greenmangaming.js
-// ──────────────────────────────────────────────────────────────────────
-
-async function scanGreenManGaming() {
-  const treffer = [];
-  try {
-    const res = await fetch('https://www.greenmangaming.com/de/free-games/', {
-      headers: { 'User-Agent': USER_AGENT },
-    });
-    const html = await res.text();
-    const $ = cheerio.load(html);
-
-    $('a, div, article').each((_, el) => {
-      const titel = $(el).find('h2, h3, .title, [class*="title"], [class*="name"]').first().text().trim();
-      const link = $(el).attr('href') ?? $(el).find('a').first().attr('href') ?? '';
-      const bild = $(el).find('img').first().attr('src') ?? $(el).find('img').first().attr('data-src') ?? '';
-      if (
-        titel && titel.length > 2 && titel.length < 120 &&
-        /free|gratis|kostenlos/i.test($(el).text())
-      ) {
-        treffer.push({
-          titel,
-          plattform: 'Green Man Gaming',
-          quelle: 'Green Man Gaming Free Games',
-          preis: 'Gratis',
-          ende: 'Zeitlich begrenzt',
-          link: link.startsWith('http') ? link : `https://www.greenmangaming.com${link}`,
-          bild,
-        });
-      }
-    });
-  } catch (e) {
-    console.warn('GreenManGaming-Scan übersprungen:', e.message);
-  }
-  const seen = new Set();
-  return treffer.filter((t) => {
-    const k = t.titel.toLowerCase();
-    if (seen.has(k)) return false;
-    seen.add(k);
-    return true;
-  }).slice(0, 25);
-}
-
-
-// ──────────────────────────────────────────────────────────────────────
-// 📄 src/gamesplanet.js
-// ──────────────────────────────────────────────────────────────────────
-
-async function scanGamesplanet() {
-  const treffer = [];
-  try {
-    const res = await fetch('https://de.gamesplanet.com/games?price=0', {
-      headers: { 'User-Agent': USER_AGENT },
-    });
-    const html = await res.text();
-    const $ = cheerio.load(html);
-
-    $('a, div, article').each((_, el) => {
-      const titel = $(el).find('h2, h3, .title, [class*="title"], [class*="name"]').first().text().trim();
-      const link = $(el).attr('href') ?? $(el).find('a').first().attr('href') ?? '';
-      const bild = $(el).find('img').first().attr('src') ?? $(el).find('img').first().attr('data-src') ?? '';
-      if (titel && titel.length > 2 && titel.length < 120) {
-        treffer.push({
-          titel,
-          plattform: 'Gamesplanet',
-          quelle: 'Gamesplanet Free Games',
-          preis: 'Gratis',
-          ende: 'Zeitlich begrenzt',
-          link: link.startsWith('http') ? link : `https://de.gamesplanet.com${link}`,
-          bild,
-        });
-      }
-    });
-  } catch (e) {
-    console.warn('Gamesplanet-Scan übersprungen:', e.message);
-  }
-  const seen = new Set();
-  return treffer.filter((t) => {
-    const k = t.titel.toLowerCase();
-    if (seen.has(k)) return false;
-    seen.add(k);
-    return true;
-  }).slice(0, 25);
-}
-
-
-// ──────────────────────────────────────────────────────────────────────
 // 📄 src/rockstar.js
 // ──────────────────────────────────────────────────────────────────────
 
@@ -812,124 +939,6 @@ async function scanRockstar() {
 
 
 // ──────────────────────────────────────────────────────────────────────
-// 📄 src/ubisoft.js
-// ──────────────────────────────────────────────────────────────────────
-
-async function scanUbisoft() {
-  const treffer = [];
-  try {
-    const res = await fetch('https://www.ubisoft.com/de-de/games', {
-      headers: { 'User-Agent': USER_AGENT },
-    });
-    const html = await res.text();
-    const $ = cheerio.load(html);
-
-    $('h2, h3').each((_, el) => {
-      const titel = $(el).text().trim();
-      if (
-        /kostenlos|gratis|free/i.test(titel) &&
-        titel.length > 3 &&
-        titel.length < 80
-      ) {
-        treffer.push({
-          titel,
-          plattform: 'Ubisoft Connect',
-          quelle: 'Ubisoft Direkt-Scan',
-          preis: 'Gratis-Aktion',
-          ende: 'Siehe Ubisoft-Seite',
-          link: 'https://www.ubisoft.com/de-de/games',
-          bild: '',
-        });
-      }
-    });
-  } catch (e) {
-    console.warn('Ubisoft-Scan Hinweis:', e.message);
-  }
-  return treffer;
-}
-
-
-// ──────────────────────────────────────────────────────────────────────
-// 📄 src/freetogame.js
-// ──────────────────────────────────────────────────────────────────────
-async function scanFreeToGame() {
-  const treffer = [];
-  try {
-    const res = await fetch('https://www.freetogame.com/api/games?sort-by=release-date');
-    const data = await res.json();
-    if (Array.isArray(data)) {
-      for (const spiel of data.slice(0, 10)) {
-        treffer.push({
-          titel: spiel.title,
-          plattform: spiel.platform ?? 'PC',
-          quelle: 'FreeToGame',
-          preis: 'Free-to-Play',
-          ende: 'Dauerhaft kostenlos',
-          link: spiel.game_url ?? 'https://www.freetogame.com',
-          bild: spiel.thumbnail ?? '',
-          art: 'Free-to-Play',
-        });
-      }
-    }
-  } catch (e) {
-    console.warn('FreeToGame-Scan übersprungen:', e.message);
-  }
-  return treffer;
-}
-
-
-// ──────────────────────────────────────────────────────────────────────
-// 📄 src/epic.js
-// ──────────────────────────────────────────────────────────────────────
-
-
-/**
- * Scannt die Epic Games Store API nach aktuellen Gratis-Angeboten.
- * Nutzt den offiziellen Free Games Promotions-Endpunkt.
- */
-async function scanEpicGames() {
-  try {
-    const url = 'https://store-site-backend-static.ak.epicgames.com/freeGamesPromotions?locale=de&country=DE&allowCountries=DE';
-    const res = await fetch(url, { headers: { 'User-Agent': USER_AGENT } });
-    const data = await res.json();
-    const spiele = data?.data?.Catalog?.searchStore?.elements || [];
-
-    const treffer = [];
-    for (const spiel of spiele) {
-      const promotionen = spiel.promotions?.promotionalOffers ?? [];
-      const angebote = promotionen.flatMap((p) => p.promotionalOffers ?? []);
-      const istGratis = angebote.some((o) => o.discountSetting?.discountPercentage === 0);
-
-      if (istGratis) {
-        const slug = spiel.catalogNs?.mappings?.[0]?.pageSlug ?? spiel.productSlug ?? '';
-        const endeRaw = angebote[0]?.endDate;
-        const ende = endeRaw ? new Date(endeRaw).toLocaleString('de-DE') : 'Begrenzte Zeit';
-        const bild =
-          spiel.keyImages?.find((i) => i.type === 'OfferImageWide')?.url ??
-          spiel.keyImages?.[0]?.url ??
-          '';
-
-        treffer.push({
-          titel: spiel.title,
-          plattform: 'Epic Games Store',
-          quelle: 'Offizielle API',
-          preis: spiel.price?.totalPrice?.fmtPrice?.originalPrice ?? 'Kostenpflichtig',
-          ende,
-          link: slug ? `https://store.epicgames.com/de/p/${slug}` : 'https://store.epicgames.com/de/free-games',
-          bild,
-          art: /dlc|add-?on/i.test(spiel.title ?? '') ? 'DLC' : 'Spiel',
-        });
-      }
-    }
-    return treffer;
-  } catch (e) {
-    console.warn('Epic-Scan übersprungen:', e.message);
-    return [];
-  }
-}
-
-
-// ──────────────────────────────────────────────────────────────────────
 // 📄 src/steam.js
 // ──────────────────────────────────────────────────────────────────────
 /**
@@ -969,85 +978,76 @@ async function scanSteam() {
 
 
 // ──────────────────────────────────────────────────────────────────────
-// 📄 src/gog.js
+// 📄 src/stove.js
 // ──────────────────────────────────────────────────────────────────────
-/**
- * Scannt die GOG-Datenbank nach aktuellen Gratis-Angeboten.
- * Nutzt die öffentliche GOG-Catalog-API.
- */
-async function scanGOG() {
-  try {
-    const url = 'https://catalog.gog.com/v1/catalog?productType=in:game,pack&discounted=eq:true&price=between:0,0&limit=48&locale=de-DE';
-    const res = await fetch(url);
-    const data = await res.json();
-    const produkte = data?.products ?? [];
 
-    return produkte.map((p) => ({
-      titel: p.title,
-      plattform: 'GOG',
-      quelle: 'GOG Catalog API',
-      preis: p.price?.base ?? 'Kostenpflichtig',
-      ende: 'Zeitlich begrenzt',
-      link: `https://www.gog.com${p.storeLink ?? '/de/games'}`,
-      bild: p.coverHorizontal ?? '',
-      art: /dlc|add-?on|erweiterung/i.test(p.title ?? '') ? 'DLC' : 'Spiel',
-    }));
+async function scanStove() {
+  const treffer = [];
+  try {
+    const res = await fetch(
+      'https://www.onstove.com/event/list?category=GAME_GIVE_AWAY&page=1&pageSize=10',
+      { headers: { 'User-Agent': USER_AGENT, 'Accept': 'application/json' } }
+    );
+    if (res.ok && res.headers.get('content-type')?.includes('json')) {
+      const data = await res.json();
+      for (const item of (data?.list ?? data?.data ?? []).slice(0, 10)) {
+        const titel = item.title ?? item.eventName ?? item.name;
+        if (!titel) continue;
+        treffer.push({
+          titel,
+          plattform: 'STOVE',
+          quelle: 'STOVE Giveaways',
+          preis: 'Gratis',
+          ende: item.endDate
+            ? new Date(item.endDate).toLocaleString('de-DE')
+            : 'Zeitlich begrenzt',
+          link: item.url ?? 'https://www.onstove.com/event',
+          bild: item.imageUrl ?? item.thumbnail ?? '',
+        });
+      }
+    }
   } catch (e) {
-    console.warn('GOG-Scan übersprungen:', e.message);
-    return [];
+    console.warn('STOVE-Scan übersprungen:', e.message);
   }
+  return treffer;
 }
 
 
 // ──────────────────────────────────────────────────────────────────────
-// 📄 src/cheapshark.js
+// 📄 src/ubisoft.js
 // ──────────────────────────────────────────────────────────────────────
-/**
- * CheapShark API – trackt 35+ PC-Spielestores und liefert alle aktuellen 100%-Rabatte.
- * Kein API-Key erforderlich. Preise in USD.
- * Docs: https://apidocs.cheapshark.com/
- */
-async function scanCheapShark() {
+
+async function scanUbisoft() {
+  const treffer = [];
   try {
-    // Nur Deals mit 100% Rabatt (upperPrice=0) und mindestens einer Bewertung
-    const url = 'https://www.cheapshark.com/api/1.0/deals?upperPrice=0&pageSize=60&sortBy=Recent';
-    const res = await fetch(url);
-    const data = await res.json();
-    if (!Array.isArray(data)) return [];
+    const res = await fetch('https://www.ubisoft.com/de-de/games', {
+      headers: { 'User-Agent': USER_AGENT },
+    });
+    const html = await res.text();
+    const $ = cheerio.load(html);
 
-    return data.map((deal) => ({
-      titel: deal.title,
-      plattform: storeIdZuName(deal.storeID),
-      quelle: 'CheapShark API (35+ Stores)',
-      preis: `${parseFloat(deal.normalPrice).toFixed(2)} $`,
-      ende: 'Zeitlich begrenzt',
-      link: `https://www.cheapshark.com/redirect?dealID=${deal.dealID}`,
-      bild: deal.thumb || '',
-      art: /dlc/i.test(deal.title ?? '') ? 'DLC' : 'Spiel',
-    }));
+    $('h2, h3').each((_, el) => {
+      const titel = $(el).text().trim();
+      if (
+        /kostenlos|gratis|free/i.test(titel) &&
+        titel.length > 3 &&
+        titel.length < 80
+      ) {
+        treffer.push({
+          titel,
+          plattform: 'Ubisoft Connect',
+          quelle: 'Ubisoft Direkt-Scan',
+          preis: 'Gratis-Aktion',
+          ende: 'Siehe Ubisoft-Seite',
+          link: 'https://www.ubisoft.com/de-de/games',
+          bild: '',
+        });
+      }
+    });
   } catch (e) {
-    console.warn('CheapShark-Scan übersprungen:', e.message);
-    return [];
+    console.warn('Ubisoft-Scan Hinweis:', e.message);
   }
-}
-
-/** Bekannte CheapShark Store-IDs → lesbarer Name */
-function storeIdZuName(id) {
-  const stores = {
-    '1':  'Steam',
-    '2':  'GamersGate',
-    '3':  'GreenManGaming',
-    '7':  'GOG',
-    '8':  'Humble Store',
-    '11': 'Fanatical',
-    '13': 'Gamesplanet',
-    '15': 'GameBillet',
-    '21': 'IndieGala',
-    '24': '2Game',
-    '28': 'WinGameStore',
-    '36': 'Epic Games Store',
-  };
-  return stores[String(id)] ?? `Store #${id}`;
+  return treffer;
 }
 
 
@@ -1107,76 +1107,13 @@ async function scanFreeStuff() {
 
 
 // ──────────────────────────────────────────────────────────────────────
-// 📄 src/prime.js
-// ──────────────────────────────────────────────────────────────────────
-
-async function scanPrimeGaming() {
-  const ergebnisse = await Promise.all([scanGamerPowerPrime(), scanFreeToGame()]);
-  return ergebnisse.flat();
-}
-
-
-// ──────────────────────────────────────────────────────────────────────
-// 📄 src/humble.js
-// ──────────────────────────────────────────────────────────────────────
-
-async function scanHumble() {
-  const treffer = await scanGamerPowerHumble();
-
-  // Direkter Humble Choice / Trove-Hinweis als statischer Eintrag
-  treffer.push({
-    titel: 'Humble Choice – Monatliche Gratis-Spiele',
-    plattform: 'Humble Bundle',
-    quelle: 'Humble Bundle (Direktlink)',
-    preis: 'Humble Choice Abo',
-    ende: 'Monatlich wechselnd',
-    link: 'https://www.humblebundle.com/membership',
-    bild: '',
-  });
-
-  return treffer;
-}
-
-
-// ──────────────────────────────────────────────────────────────────────
-// 📄 src/hersteller.js
-// ──────────────────────────────────────────────────────────────────────
-
-async function scanHersteller() {
-  const ergebnisse = await Promise.all([scanRockstar(), scanUbisoft()]);
-  return ergebnisse.flat();
-}
-
-
-// ──────────────────────────────────────────────────────────────────────
-// 📄 src/community.js
-// ──────────────────────────────────────────────────────────────────────
-
-/**
- * Aggregator: Community-Datenbanken + neue Stores.
- */
-async function scanCommunityDeals() {
-  const ergebnisse = await Promise.all([
-    scanGamerPower(),
-    scanIndieGala(),
-    scanItch(),
-    scanStove(),
-    scanFanatical(),
-    scanGreenManGaming(),
-    scanGamesplanet(),
-  ]);
-  return ergebnisse.flat();
-}
-
-
-// ──────────────────────────────────────────────────────────────────────
 // 📄 server.js
 // ──────────────────────────────────────────────────────────────────────
 
 
-const PORT = parseInt(process.env.PORT ?? '3000', 10);
-const SCAN_INTERVAL_HOURS = parseInt(process.env.SCAN_INTERVAL_HOURS ?? '6', 10);
-const HTML_PATH = path.resolve('gratis-spiele.html');
+const PORT                = parseInt(process.env.PORT               ?? '3000', 10);
+const SCAN_INTERVAL_HOURS = parseInt(process.env.SCAN_INTERVAL_HOURS ?? '6',    10);
+const HTML_PATH           = path.resolve('gratis-spiele.html');
 
 // ── Scanner ────────────────────────────────────────────────────────────────
 
@@ -1184,18 +1121,31 @@ async function runScan() {
   console.log(`[${timestamp()}] 🔍 Starte Scan...`);
   try {
     const ergebnisse = await Promise.all([
+      // Offizielle Store-APIs
       scanEpicGames(),
       scanSteam(),
       scanGOG(),
+      // Aggregatoren / Datenbanken
       scanCheapShark(),
       scanFreeStuff(),
-      scanPrimeGaming(),
-      scanHumble(),
-      scanHersteller(),
-      scanCommunityDeals(),
+      scanGamerPower(),
+      scanGamerPowerPrime(),
+      scanGamerPowerHumble(),
+      scanFreeToGame(),
+      // Direkter Store-Scan
+      scanItch(),
+      scanIndieGala(),
+      scanStove(),
+      scanFanatical(),
+      scanGreenManGaming(),
+      scanGamesplanet(),
+      scanRockstar(),
+      scanUbisoft(),
     ]);
 
     const rohListe = ergebnisse.flat();
+
+    // Duplikate anhand des Titels bereinigen (case-insensitive, bidirektional)
     const finaleListe = [];
     for (const eintrag of rohListe) {
       const titelNorm = eintrag.titel.toLowerCase();
@@ -1216,22 +1166,20 @@ async function runScan() {
 // ── HTTP-Server ────────────────────────────────────────────────────────────
 
 const server = http.createServer((req, res) => {
-  const url = new URL(req.url, `http://localhost`);
+  const url = new URL(req.url, 'http://localhost');
 
-  // /status – JSON-Statusseite für Monitoring
   if (url.pathname === '/status') {
     const stat = fs.existsSync(HTML_PATH) ? fs.statSync(HTML_PATH) : null;
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({
       status: 'ok',
-      letzterScan: stat ? stat.mtime.toLocaleString('de-DE') : 'noch kein Scan',
+      letzterScan:   stat ? stat.mtime.toLocaleString('de-DE') : 'noch kein Scan',
       naechsterScan: `in ca. ${SCAN_INTERVAL_HOURS}h`,
       port: PORT,
     }));
     return;
   }
 
-  // /scan – manuellen Scan auslösen
   if (url.pathname === '/scan') {
     runScan();
     res.writeHead(202, { 'Content-Type': 'text/plain; charset=utf-8' });
@@ -1239,7 +1187,6 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // / – HTML-Seite ausliefern
   if (!fs.existsSync(HTML_PATH)) {
     res.writeHead(503, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('Scan läuft noch, bitte kurz warten…');
@@ -1256,18 +1203,11 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`[${timestamp()}] 🚀 Server läuft auf Port ${PORT}`);
   console.log(`[${timestamp()}] 🔄 Scan-Intervall: alle ${SCAN_INTERVAL_HOURS} Stunden`);
-  console.log(`[${timestamp()}]    Routen: /  →  HTML-Seite`);
-  console.log(`[${timestamp()}]            /status  →  JSON-Status`);
-  console.log(`[${timestamp()}]            /scan    →  Scan manuell starten`);
+  console.log(`[${timestamp()}]    Routen: /  →  HTML-Seite | /status  →  JSON | /scan  →  Scan starten`);
 });
 
-// ── Scheduler ─────────────────────────────────────────────────────────────
-
-// Sofort beim Start scannen, dann alle X Stunden
 runScan();
 setInterval(runScan, SCAN_INTERVAL_HOURS * 60 * 60 * 1000);
-
-// ── Hilfsfunktionen ───────────────────────────────────────────────────────
 
 function timestamp() {
   return new Date().toLocaleString('de-DE');

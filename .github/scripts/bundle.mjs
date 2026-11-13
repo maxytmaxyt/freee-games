@@ -1,19 +1,5 @@
 /**
  * bundle.mjs – baut alle JS-Dateien in eine einzige all.js zusammen.
- *
- * Reihenfolge (Abhängigkeiten zuerst, Einstiegspunkt zuletzt):
- *   0. src/constants.js   – gemeinsame Konstanten (USER_AGENT usw.)
- *   1. src/html.js        – HTML-Generator
- *   2. src/epic.js        – Scanner
- *   3. src/steam.js       – Scanner
- *   4. src/gog.js         – Scanner
- *   5. src/cheapshark.js  – Scanner
- *   6. src/freestuff.js   – Scanner
- *   7. src/prime.js       – Scanner
- *   8. src/humble.js      – Scanner
- *   9. src/hersteller.js  – Scanner (braucht cheerio)
- *  10. src/community.js   – Scanner
- *  11. server.js          – HTTP-Server + Scheduler (Einstiegspunkt)
  */
 
 import fs   from 'node:fs';
@@ -29,57 +15,74 @@ const DATEIEN = [
   'src/client.js',
   'src/html.js',
   'src/gamerpower.js',
+  'src/cheapshark.js',
+  'src/epic.js',
+  'src/fanatical.js',
+  'src/freetogame.js',
+  'src/gamesplanet.js',
+  'src/gog.js',
+  'src/greenmangaming.js',
   'src/indiegala.js',
   'src/itch.js',
-  'src/stove.js',
-  'src/fanatical.js',
-  'src/greenmangaming.js',
-  'src/gamesplanet.js',
   'src/rockstar.js',
-  'src/ubisoft.js',
-  'src/freetogame.js',
-  'src/epic.js',
   'src/steam.js',
-  'src/gog.js',
-  'src/cheapshark.js',
+  'src/stove.js',
+  'src/ubisoft.js',
   'src/freestuff.js',
-  'src/prime.js',
-  'src/humble.js',
-  'src/hersteller.js',
-  'src/community.js',
   'server.js',
 ];
 
-// Externe Imports sammeln (node:*, cheerio, open) – lokale weglassen
 const externeImports = new Set();
 
 function verarbeite(dateiPfad) {
   const inhalt = fs.readFileSync(path.join(ROOT, dateiPfad), 'utf-8');
   const ausgabe = [];
+  const zeilen = inhalt.split('\n');
+  let i = 0;
 
-  for (const zeile of inhalt.split('\n')) {
+  while (i < zeilen.length) {
+    const zeile = zeilen[i];
     const trimmed = zeile.trim();
 
-    if (/^import\s/.test(trimmed)) {
-      const match = trimmed.match(/from\s+['"]([^'"]+)['"]/);
-      if (match) {
-        if (match[1].startsWith('.')) {
-          continue; // lokaler Import → inline gebündelt, weglassen
-        } else {
-          externeImports.add(zeile.trimEnd()); // externer Import → oben sammeln
-          continue;
-        }
+    // Einzeiliger Import: import X from '...'  oder  import { X } from '...'
+    if (/^import\s/.test(trimmed) && trimmed.includes('from')) {
+      const quelle = (trimmed.match(/from\s+['"]([^'"]+)['"]/) || [])[1];
+      if (quelle) {
+        if (!quelle.startsWith('.')) externeImports.add(zeile.trimEnd());
+        i++;
+        continue;
       }
+    }
+
+    // Mehrzeiliger Import: import {\n  a,\n  b,\n} from '...'
+    if (/^import\s*\{/.test(trimmed) && !trimmed.includes('from')) {
+      let block = zeile;
+      i++;
+      while (i < zeilen.length) {
+        block += '\n' + zeilen[i];
+        if (zeilen[i].includes('from')) break;
+        i++;
+      }
+      const quelle = (block.match(/from\s+['"]([^'"]+)['"]/) || [])[1];
+      if (quelle && !quelle.startsWith('.')) {
+        // Mehrzeiligen externen Import einzeilig normalisieren
+        const names = block.match(/\{([^}]+)\}/)?.[1]
+          .split(',').map(s => s.trim()).filter(Boolean).join(', ');
+        externeImports.add(`import { ${names} } from '${quelle}';`);
+      }
+      // lokale mehrzeilige Imports einfach weglassen
+      i++;
+      continue;
     }
 
     // export-Keyword entfernen
     ausgabe.push(zeile.replace(/^export\s+default\s+/, '').replace(/^export\s+/, ''));
+    i++;
   }
 
   return ausgabe.join('\n');
 }
 
-// Alle Dateien verarbeiten
 const sektionen = DATEIEN.map((datei) => {
   const inhalt = verarbeite(datei);
   const banner = `\n// ${'─'.repeat(70)}\n// 📄 ${datei}\n// ${'─'.repeat(70)}\n`;
@@ -94,9 +97,7 @@ const header = `// ============================================================
 
 `;
 
-const externalBlock = [...externeImports].sort().join('\n') + '\n\n';
-const ausgabe = header + externalBlock + sektionen.join('\n');
-
+const ausgabe = header + [...externeImports].sort().join('\n') + '\n\n' + sektionen.join('\n');
 fs.writeFileSync(path.join(ROOT, 'all.js'), ausgabe, 'utf-8');
 
 const zeilen = ausgabe.split('\n').length;
