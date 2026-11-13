@@ -2,11 +2,8 @@ import { STYLES } from './styles.js';
 import { CLIENT_SCRIPT } from './client.js';
 import { normalisiere, QUELLEN_LINKS } from './meta.js';
 
-/**
- * Erzeugt die finale HTML-Ausgabe als vollständige Seite.
- */
 export function baueHtml(liste) {
-  const normListe = (liste || []).map(normalisiere);
+  const normListe  = (liste || []).map(normalisiere);
   const zeitstempel = new Date().toLocaleString('de-DE');
 
   const quellenSet = [...new Set(normListe.map((s) => s.plattform))];
@@ -20,13 +17,10 @@ export function baueHtml(liste) {
     .join('');
 
   const dlcAnzahl = normListe.filter((s) => s.istDlc).length;
-  const arten = [...new Set(normListe.map((s) => s.art))];
 
   const karten = normListe
     .map((s) => {
       const dlcClass = s.istDlc ? ' dlc' : '';
-      const artBadge = `<span class="tag art">${s.art}</span>`;
-      const dlcBadge = s.istDlc ? `<span class="tag dlc-badge">DLC</span>` : '';
       return `
     <div class="card${dlcClass}"
          data-titel="${escapeAttr(s.titel)}"
@@ -34,30 +28,23 @@ export function baueHtml(liste) {
          data-plattform="${escapeAttr(s.plattform)}"
          data-ende="${s.endeTs}"
          data-dlc="${s.istDlc ? '1' : '0'}">
-      ${
-        s.bild
-          ? `<img src="${escapeAttr(s.bild)}" alt="${escapeAttr(s.titel)}" loading="lazy">`
-          : `<div class="no-img">${escapeHtml(s.plattform)}</div>`
-      }
+      ${s.bild
+        ? `<img src="${escapeAttr(s.bild)}" alt="${escapeAttr(s.titel)}" loading="lazy">`
+        : `<div class="no-img">${escapeHtml(s.plattform)}</div>`}
       <div class="body">
         <div class="tags">
           <span class="tag store">${escapeHtml(s.plattform)}</span>
           <span class="tag source">${escapeHtml(s.quelle)}</span>
-          ${artBadge}
-          ${dlcBadge}
+          <span class="tag art">${escapeHtml(s.art)}</span>
+          ${s.istDlc ? '<span class="tag dlc-badge">DLC</span>' : ''}
         </div>
         <h2>${escapeHtml(s.titel)}</h2>
-        <p><strong>Regulär:</strong> <s>${escapeHtml(s.preis)}</s> → <span class="free">0,00 € (Gratis!)</span></p>
+        <p><strong>Regulär:</strong> <s>${escapeHtml(s.preis)}</s> → <span class="free">Gratis!</span></p>
         <p><strong>Zeitraum:</strong> ${escapeHtml(s.ende)}</p>
         <a href="${escapeAttr(s.link)}" target="_blank" rel="noopener noreferrer" class="btn">Angebot öffnen →</a>
       </div>
-    </div>
-  `;
+    </div>`;
     })
-    .join('');
-
-  const artOptionen = arten
-    .map((a) => `<option value="${escapeAttr(a)}">${escapeHtml(a)}</option>`)
     .join('');
 
   const quellenListe = quellenSet
@@ -82,45 +69,59 @@ ${STYLES}
     <h1>🎮 Aktuelle Gratis-Spiele</h1>
     <div class="meta">
       Letzter Scan: ${escapeHtml(zeitstempel)}
-      &nbsp;•&nbsp; <strong>${normListe.length}</strong> Angebote gefunden
+      &nbsp;•&nbsp; <strong>${normListe.length}</strong> Angebote total
       &nbsp;•&nbsp; davon <strong>${dlcAnzahl}</strong> DLCs
     </div>
     <div class="plattformen">${quellenBadges}</div>
   </header>
 
   <div class="toolbar">
-    <label for="sort">Sortieren nach:</label>
-    <select id="sort">
-      <option value="default">Standard</option>
-      <option value="art">Art / Typ</option>
-      <option value="plattform">Quelle / Plattform</option>
-      <option value="titel">Titel</option>
-      <option value="ende">Ablaufdatum</option>
-    </select>
-    <label for="art-filter">Art filtern:</label>
-    <select id="art-filter">
-      <option value="all">Alle</option>
-      ${artOptionen}
-    </select>
-    <div class="checkbox-wrap">
-      <input type="checkbox" id="dlc-only">
-      <label for="dlc-only">Nur DLCs anzeigen</label>
+    <div class="toolbar-row">
+      <label for="search">🔍</label>
+      <input type="text" id="search" placeholder="Titel suchen…">
+
+      <label for="sort">Sortieren:</label>
+      <select id="sort">
+        <option value="default">Standard</option>
+        <option value="titel">Titel A–Z</option>
+        <option value="plattform">Plattform</option>
+        <option value="art">Art / Typ</option>
+        <option value="ende">Ablaufdatum</option>
+      </select>
+
+      <label for="platt-filter">Plattform:</label>
+      <select id="platt-filter">
+        <option value="all">Alle</option>
+      </select>
+
+      <label for="art-filter">Art:</label>
+      <select id="art-filter">
+        <option value="all">Alle</option>
+      </select>
+
+      <label class="toggle-wrap" title="DLCs, Add-ons und Season Passes ausblenden">
+        <input type="checkbox" id="hide-dlc"> DLCs ausblenden
+      </label>
+
+      <label class="toggle-wrap" title="Free-to-Play Dauertitel ausblenden">
+        <input type="checkbox" id="hide-f2p"> F2P ausblenden
+      </label>
+
+      <button class="reset-btn" id="reset-filters" title="Alle Filter zurücksetzen">✕ Reset</button>
+      <span class="counter-badge" id="counter">${normListe.length} Angebote</span>
     </div>
   </div>
 
   <div class="grid">
-    ${
-      karten ||
-      '<p class="empty">Aktuell wurden keine Gratis-Aktionen gefunden. Versuche es später erneut.</p>'
-    }
+    ${karten || '<p class="empty">Aktuell keine Gratis-Aktionen gefunden. Versuche es später erneut.</p>'}
   </div>
 
   <div class="sources">
-    <h3>📦 Quellen, aus denen Spiele bezogen werden</h3>
+    <h3>📦 Gescannte Quellen</h3>
     <ul>${quellenListe}</ul>
   </div>
 
-  <footer>PC Gratis-Spiele Scanner – automatisch aktualisiert</footer>
+  <footer>PC Gratis-Spiele Scanner – automatisch aktualisiert alle ${'{SCAN_INTERVAL_HOURS}'}h</footer>
 
   <script>
 ${CLIENT_SCRIPT}
