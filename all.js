@@ -1,6 +1,6 @@
 // ============================================================
 // all.js – automatisch gebündelt aus allen Quelldateien
-// Generiert: 13.11.2026, 10:36:54
+// Generiert: 13.11.2026, 10:37:22
 // Quelldateien: src/constants.js, src/meta.js, src/styles.js, src/client.js, src/html.js, src/gamerpower.js, src/cheapshark.js, src/epic.js, src/fanatical.js, src/freetogame.js, src/gamesplanet.js, src/gog.js, src/greenmangaming.js, src/indiegala.js, src/itch.js, src/rockstar.js, src/steam.js, src/stove.js, src/ubisoft.js, src/freestuff.js, server.js
 // ============================================================
 
