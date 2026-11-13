@@ -1,6 +1,6 @@
 // ============================================================
 // all.js – automatisch gebündelt aus allen Quelldateien
-// Generiert: 13.11.2026, 10:37:22
+// Generiert: 13.11.2026, 10:41:07
 // Quelldateien: src/constants.js, src/meta.js, src/styles.js, src/client.js, src/html.js, src/gamerpower.js, src/cheapshark.js, src/epic.js, src/fanatical.js, src/freetogame.js, src/gamesplanet.js, src/gog.js, src/greenmangaming.js, src/indiegala.js, src/itch.js, src/rockstar.js, src/steam.js, src/stove.js, src/ubisoft.js, src/freestuff.js, server.js
 // ============================================================
 
@@ -110,34 +110,79 @@ const STYLES = `
       text-decoration: none;
     }
     .plattform-badge:hover { border-color: #58a6ff; color: #58a6ff; }
+
+    /* ── Toolbar ─────────────────────────────────────────────────── */
     .toolbar {
       max-width: 1400px;
       margin: 0 auto 1.5rem;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
       display: flex;
       flex-wrap: wrap;
       gap: 0.75rem;
       align-items: center;
-      justify-content: center;
     }
-    .toolbar label { font-size: 0.85rem; color: #c9d1d9; }
-    .toolbar select, .toolbar input[type="checkbox"] { cursor: pointer; }
-    .toolbar select {
-      background: #21262d;
+    .toolbar-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      align-items: center;
+      width: 100%;
+    }
+    .toolbar label { font-size: 0.82rem; color: #8b949e; white-space: nowrap; }
+    .toolbar select, .toolbar input[type="text"] {
+      background: #0f1115;
       color: #e6e8ec;
       border: 1px solid #30363d;
       border-radius: 6px;
-      padding: 0.35rem 0.6rem;
+      padding: 0.4rem 0.65rem;
       font-size: 0.85rem;
+      outline: none;
+      cursor: pointer;
+      min-width: 130px;
     }
-    .toolbar .checkbox-wrap {
+    .toolbar select:focus, .toolbar input[type="text"]:focus {
+      border-color: #58a6ff;
+    }
+    .toolbar input[type="text"] { min-width: 200px; }
+    .toolbar input[type="text"]::placeholder { color: #484f58; }
+    .toggle-wrap {
       display: flex;
       align-items: center;
-      gap: 0.35rem;
-      background: #21262d;
+      gap: 0.4rem;
+      background: #0f1115;
       border: 1px solid #30363d;
       border-radius: 6px;
-      padding: 0.35rem 0.6rem;
+      padding: 0.4rem 0.65rem;
+      cursor: pointer;
+      font-size: 0.82rem;
+      color: #c9d1d9;
+      user-select: none;
     }
+    .toggle-wrap input[type="checkbox"] { accent-color: #1f6feb; cursor: pointer; }
+    .toggle-wrap:has(input:checked) { border-color: #1f6feb; color: #58a6ff; }
+    .counter-badge {
+      margin-left: auto;
+      font-size: 0.82rem;
+      color: #3fb950;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .reset-btn {
+      background: none;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      color: #8b949e;
+      font-size: 0.82rem;
+      padding: 0.4rem 0.65rem;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .reset-btn:hover { border-color: #58a6ff; color: #58a6ff; }
+
+    /* ── Grid & Cards ────────────────────────────────────────────── */
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
@@ -155,7 +200,7 @@ const STYLES = `
       transition: transform 0.2s, border-color 0.2s;
     }
     .card:hover { transform: translateY(-4px); border-color: #58a6ff; }
-    .card.dlc { border-left: 4px solid #f0883e; }
+    .card.dlc   { border-left: 4px solid #f0883e; }
     .card img {
       width: 100%;
       height: 165px;
@@ -173,25 +218,15 @@ const STYLES = `
       color: #8b949e;
       font-size: 1.1rem;
     }
-    .body {
-      padding: 1.25rem;
-      display: flex;
-      flex-direction: column;
-      flex-grow: 1;
-    }
+    .body { padding: 1.25rem; display: flex; flex-direction: column; flex-grow: 1; }
     .tags { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
-    .tag {
-      font-size: 0.72rem;
-      padding: 0.2rem 0.6rem;
-      border-radius: 999px;
-      font-weight: 600;
-    }
-    .store { background: #238636; color: #fff; }
-    .source { background: #30363d; color: #c9d1d9; }
-    .art { background: #1f6feb; color: #fff; }
+    .tag { font-size: 0.72rem; padding: 0.2rem 0.6rem; border-radius: 999px; font-weight: 600; }
+    .store     { background: #238636; color: #fff; }
+    .source    { background: #30363d; color: #c9d1d9; }
+    .art       { background: #1f6feb; color: #fff; }
     .dlc-badge { background: #f0883e; color: #fff; }
     h2 { font-size: 1.1rem; margin: 0 0 0.75rem; line-height: 1.35; }
-    p { margin: 0.25rem 0; font-size: 0.88rem; color: #8b949e; }
+    p  { margin: 0.25rem 0; font-size: 0.88rem; color: #8b949e; }
     .free { color: #3fb950; font-weight: bold; }
     .btn {
       display: block;
@@ -206,12 +241,9 @@ const STYLES = `
       transition: background 0.15s;
     }
     .btn:hover { background: #388bfd; }
-    .empty {
-      text-align: center;
-      grid-column: 1 / -1;
-      color: #8b949e;
-      padding: 3rem;
-    }
+    .empty { text-align: center; grid-column: 1 / -1; color: #8b949e; padding: 3rem; }
+
+    /* ── Quellen-Footer ─────────────────────────────────────────── */
     .sources {
       max-width: 1400px;
       margin: 2rem auto 0;
@@ -241,48 +273,108 @@ const STYLES = `
 // ──────────────────────────────────────────────────────────────────────
 const CLIENT_SCRIPT = `
 (function () {
-  const grid = document.querySelector('.grid');
-  const sortSel = document.getElementById('sort');
-  const dlcOnly = document.getElementById('dlc-only');
-  const artFilter = document.getElementById('art-filter');
+  const grid      = document.querySelector('.grid');
+  const sortSel   = document.getElementById('sort');
+  const searchIn  = document.getElementById('search');
+  const plattSel  = document.getElementById('platt-filter');
+  const artSel    = document.getElementById('art-filter');
+  const hideDlc   = document.getElementById('hide-dlc');
+  const hideF2p   = document.getElementById('hide-f2p');
+  const counter   = document.getElementById('counter');
+  const resetBtn  = document.getElementById('reset-filters');
   if (!grid) return;
 
   function cards() { return Array.from(grid.querySelectorAll('.card')); }
 
   function apply() {
-    const mode = sortSel ? sortSel.value : 'default';
-    const onlyDlc = dlcOnly ? dlcOnly.checked : false;
-    const art = artFilter ? artFilter.value : 'all';
+    const mode     = sortSel  ? sortSel.value.trim()  : 'default';
+    const query    = searchIn ? searchIn.value.toLowerCase().trim() : '';
+    const platt    = plattSel ? plattSel.value : 'all';
+    const art      = artSel   ? artSel.value   : 'all';
+    const noDlc    = hideDlc  ? hideDlc.checked  : false;
+    const noF2p    = hideF2p  ? hideF2p.checked  : false;
 
     const all = cards();
+    let visible = 0;
+
     all.forEach(function (c) {
       let show = true;
-      if (onlyDlc && c.dataset.dlc !== '1') show = false;
-      if (art !== 'all' && c.dataset.art !== art) show = false;
+      if (noDlc && c.dataset.dlc === '1')                              show = false;
+      if (noF2p && c.dataset.art === 'Free-to-Play')                   show = false;
+      if (art !== 'all' && c.dataset.art !== art)                      show = false;
+      if (platt !== 'all' && c.dataset.plattform !== platt)            show = false;
+      if (query && !c.dataset.titel.toLowerCase().includes(query))     show = false;
       c.style.display = show ? '' : 'none';
+      if (show) visible++;
     });
 
-    const visible = all.filter(function (c) { return c.style.display !== 'none'; });
-    visible.sort(function (a, b) {
+    if (counter) counter.textContent = visible + ' Angebote';
+
+    // Sortierung nur auf sichtbare anwenden
+    const sichtbar = all.filter(function (c) { return c.style.display !== 'none'; });
+    sichtbar.sort(function (a, b) {
       switch (mode) {
-        case 'art':
-          return (a.dataset.art || '').localeCompare(b.dataset.art || '', 'de');
-        case 'plattform':
-          return (a.dataset.plattform || '').localeCompare(b.dataset.plattform || '', 'de');
         case 'titel':
           return (a.dataset.titel || '').localeCompare(b.dataset.titel || '', 'de');
+        case 'plattform':
+          return (a.dataset.plattform || '').localeCompare(b.dataset.plattform || '', 'de');
+        case 'art':
+          return (a.dataset.art || '').localeCompare(b.dataset.art || '', 'de');
         case 'ende':
           return (parseInt(a.dataset.ende, 10) || 0) - (parseInt(b.dataset.ende, 10) || 0);
         default:
           return 0;
       }
     });
-    visible.forEach(function (c) { grid.appendChild(c); });
+    sichtbar.forEach(function (c) { grid.appendChild(c); });
   }
 
-  if (sortSel) sortSel.addEventListener('change', apply);
-  if (dlcOnly) dlcOnly.addEventListener('change', apply);
-  if (artFilter) artFilter.addEventListener('change', apply);
+  // Plattform-Dropdown dynamisch aus vorhandenen Karten aufbauen
+  if (plattSel) {
+    var seen = new Set();
+    cards().forEach(function (c) {
+      var p = c.dataset.plattform;
+      if (p && !seen.has(p)) { seen.add(p); }
+    });
+    Array.from(seen).sort(function(a,b){ return a.localeCompare(b,'de'); }).forEach(function (p) {
+      var o = document.createElement('option');
+      o.value = p; o.textContent = p;
+      plattSel.appendChild(o);
+    });
+  }
+
+  // Art-Dropdown dynamisch aufbauen
+  if (artSel) {
+    var seenArt = new Set();
+    cards().forEach(function (c) {
+      var a = c.dataset.art;
+      if (a && !seenArt.has(a)) seenArt.add(a);
+    });
+    Array.from(seenArt).sort().forEach(function (a) {
+      var o = document.createElement('option');
+      o.value = a; o.textContent = a;
+      artSel.appendChild(o);
+    });
+  }
+
+  // Reset
+  if (resetBtn) {
+    resetBtn.addEventListener('click', function () {
+      if (searchIn) searchIn.value = '';
+      if (sortSel)  sortSel.value  = 'default';
+      if (plattSel) plattSel.value = 'all';
+      if (artSel)   artSel.value   = 'all';
+      if (hideDlc)  hideDlc.checked = false;
+      if (hideF2p)  hideF2p.checked = false;
+      apply();
+    });
+  }
+
+  [sortSel, searchIn, plattSel, artSel, hideDlc, hideF2p].forEach(function (el) {
+    if (el) el.addEventListener(el.type === 'checkbox' ? 'change' : 'input', apply);
+  });
+
+  apply(); // initial counter setzen
 })();
 `;
 
@@ -291,11 +383,8 @@ const CLIENT_SCRIPT = `
 // 📄 src/html.js
 // ──────────────────────────────────────────────────────────────────────
 
-/**
- * Erzeugt die finale HTML-Ausgabe als vollständige Seite.
- */
 function baueHtml(liste) {
-  const normListe = (liste || []).map(normalisiere);
+  const normListe  = (liste || []).map(normalisiere);
   const zeitstempel = new Date().toLocaleString('de-DE');
 
   const quellenSet = [...new Set(normListe.map((s) => s.plattform))];
@@ -309,13 +398,10 @@ function baueHtml(liste) {
     .join('');
 
   const dlcAnzahl = normListe.filter((s) => s.istDlc).length;
-  const arten = [...new Set(normListe.map((s) => s.art))];
 
   const karten = normListe
     .map((s) => {
       const dlcClass = s.istDlc ? ' dlc' : '';
-      const artBadge = `<span class="tag art">${s.art}</span>`;
-      const dlcBadge = s.istDlc ? `<span class="tag dlc-badge">DLC</span>` : '';
       return `
     <div class="card${dlcClass}"
          data-titel="${escapeAttr(s.titel)}"
@@ -323,30 +409,23 @@ function baueHtml(liste) {
          data-plattform="${escapeAttr(s.plattform)}"
          data-ende="${s.endeTs}"
          data-dlc="${s.istDlc ? '1' : '0'}">
-      ${
-        s.bild
-          ? `<img src="${escapeAttr(s.bild)}" alt="${escapeAttr(s.titel)}" loading="lazy">`
-          : `<div class="no-img">${escapeHtml(s.plattform)}</div>`
-      }
+      ${s.bild
+        ? `<img src="${escapeAttr(s.bild)}" alt="${escapeAttr(s.titel)}" loading="lazy">`
+        : `<div class="no-img">${escapeHtml(s.plattform)}</div>`}
       <div class="body">
         <div class="tags">
           <span class="tag store">${escapeHtml(s.plattform)}</span>
           <span class="tag source">${escapeHtml(s.quelle)}</span>
-          ${artBadge}
-          ${dlcBadge}
+          <span class="tag art">${escapeHtml(s.art)}</span>
+          ${s.istDlc ? '<span class="tag dlc-badge">DLC</span>' : ''}
         </div>
         <h2>${escapeHtml(s.titel)}</h2>
-        <p><strong>Regulär:</strong> <s>${escapeHtml(s.preis)}</s> → <span class="free">0,00 € (Gratis!)</span></p>
+        <p><strong>Regulär:</strong> <s>${escapeHtml(s.preis)}</s> → <span class="free">Gratis!</span></p>
         <p><strong>Zeitraum:</strong> ${escapeHtml(s.ende)}</p>
         <a href="${escapeAttr(s.link)}" target="_blank" rel="noopener noreferrer" class="btn">Angebot öffnen →</a>
       </div>
-    </div>
-  `;
+    </div>`;
     })
-    .join('');
-
-  const artOptionen = arten
-    .map((a) => `<option value="${escapeAttr(a)}">${escapeHtml(a)}</option>`)
     .join('');
 
   const quellenListe = quellenSet
@@ -371,45 +450,59 @@ ${STYLES}
     <h1>🎮 Aktuelle Gratis-Spiele</h1>
     <div class="meta">
       Letzter Scan: ${escapeHtml(zeitstempel)}
-      &nbsp;•&nbsp; <strong>${normListe.length}</strong> Angebote gefunden
+      &nbsp;•&nbsp; <strong>${normListe.length}</strong> Angebote total
       &nbsp;•&nbsp; davon <strong>${dlcAnzahl}</strong> DLCs
     </div>
     <div class="plattformen">${quellenBadges}</div>
   </header>
 
   <div class="toolbar">
-    <label for="sort">Sortieren nach:</label>
-    <select id="sort">
-      <option value="default">Standard</option>
-      <option value="art">Art / Typ</option>
-      <option value="plattform">Quelle / Plattform</option>
-      <option value="titel">Titel</option>
-      <option value="ende">Ablaufdatum</option>
-    </select>
-    <label for="art-filter">Art filtern:</label>
-    <select id="art-filter">
-      <option value="all">Alle</option>
-      ${artOptionen}
-    </select>
-    <div class="checkbox-wrap">
-      <input type="checkbox" id="dlc-only">
-      <label for="dlc-only">Nur DLCs anzeigen</label>
+    <div class="toolbar-row">
+      <label for="search">🔍</label>
+      <input type="text" id="search" placeholder="Titel suchen…">
+
+      <label for="sort">Sortieren:</label>
+      <select id="sort">
+        <option value="default">Standard</option>
+        <option value="titel">Titel A–Z</option>
+        <option value="plattform">Plattform</option>
+        <option value="art">Art / Typ</option>
+        <option value="ende">Ablaufdatum</option>
+      </select>
+
+      <label for="platt-filter">Plattform:</label>
+      <select id="platt-filter">
+        <option value="all">Alle</option>
+      </select>
+
+      <label for="art-filter">Art:</label>
+      <select id="art-filter">
+        <option value="all">Alle</option>
+      </select>
+
+      <label class="toggle-wrap" title="DLCs, Add-ons und Season Passes ausblenden">
+        <input type="checkbox" id="hide-dlc"> DLCs ausblenden
+      </label>
+
+      <label class="toggle-wrap" title="Free-to-Play Dauertitel ausblenden">
+        <input type="checkbox" id="hide-f2p"> F2P ausblenden
+      </label>
+
+      <button class="reset-btn" id="reset-filters" title="Alle Filter zurücksetzen">✕ Reset</button>
+      <span class="counter-badge" id="counter">${normListe.length} Angebote</span>
     </div>
   </div>
 
   <div class="grid">
-    ${
-      karten ||
-      '<p class="empty">Aktuell wurden keine Gratis-Aktionen gefunden. Versuche es später erneut.</p>'
-    }
+    ${karten || '<p class="empty">Aktuell keine Gratis-Aktionen gefunden. Versuche es später erneut.</p>'}
   </div>
 
   <div class="sources">
-    <h3>📦 Quellen, aus denen Spiele bezogen werden</h3>
+    <h3>📦 Gescannte Quellen</h3>
     <ul>${quellenListe}</ul>
   </div>
 
-  <footer>PC Gratis-Spiele Scanner – automatisch aktualisiert</footer>
+  <footer>PC Gratis-Spiele Scanner – automatisch aktualisiert alle ${'{SCAN_INTERVAL_HOURS}'}h</footer>
 
   <script>
 ${CLIENT_SCRIPT}
